@@ -1,0 +1,60 @@
+# Template — copy as-is or adjust. Run with:
+#   docker compose up -d --build
+# Then open http://localhost:8080
+services:
+  pdf-unlock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pdf-unlock:latest
+    container_name: pdf-unlock
+
+    # host:container — change only the left side
+    ports:
+      - "8191:80"
+
+    restart: unless-stopped
+
+    # Static files only: the container never needs to write to its own filesystem.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+      - /var/cache/nginx
+    security_opt:
+      - no-new-privileges:true
+
+    # All PDF processing happens in the visitor's browser, so the container is
+    # stateless and needs no volumes, env vars, or database.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --- Optional: TLS-terminating reverse proxy -------------------------------
+  # Uncomment to serve the app over HTTPS (adds certificate handling for you).
+  caddy:
+    image: caddy:2-alpine
+    container_name: pdf-unlock-proxy
+    depends_on:
+      - pdf-unlock
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

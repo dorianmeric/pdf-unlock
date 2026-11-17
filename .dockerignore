@@ -1,0 +1,11 @@
+.git
+.github
+.gitignore
+node_modules
+dist
+*.lnk
+*.ps1
+docker-compose.yml
+Dockerfile
+.dockerignore
+README.md

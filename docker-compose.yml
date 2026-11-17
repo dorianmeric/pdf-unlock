@@ -1,6 +1,11 @@
 # Template — copy as-is or adjust. Run with:
 #   docker compose up -d --build
-# Then open http://localhost:8080
+# Then open http://localhost:8191
+#
+# Ports are configurable from the environment (=.env or shell):
+#   HOST_PORT=8191          host port published by docker
+#   CONTAINER_PORT=8191     port nginx listens on inside the container (PORT)
+#   HOST_PORT=9000 CONTAINER_PORT=8080 docker compose up -d
 services:
   pdf-unlock:
     build:
@@ -9,25 +14,36 @@ services:
     #image: pdf-unlock:latest
     container_name: pdf-unlock
 
-    # host:container — change only the left side
+    environment:
+      # Port nginx listens on inside the container; the config template is
+      # rendered with this value on every start.
+      PORT: "${CONTAINER_PORT:-8191}"
+
+    # host:container
     ports:
-      - "8191:8191"
+      - "${HOST_PORT:-8191}:${CONTAINER_PORT:-8191}"
 
     restart: unless-stopped
 
-    # Static files only: the container never needs to write to its own filesystem.
+    # Static files only: nothing is persisted, so the root filesystem stays
+    # read-only and only scratch paths get tmpfs mounts.
     read_only: true
     tmpfs:
       - /tmp
       - /run
       - /var/cache/nginx
+      # The entrypoint renders the port template into this directory, so it has
+      # to be writable even though the rest of the filesystem is read-only.
+      - /etc/nginx/conf.d
     security_opt:
       - no-new-privileges:true
 
     # All PDF processing happens in the visitor's browser, so the container is
-    # stateless and needs no volumes, env vars, or database.
+    # stateless and needs no volumes or database.
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      # $$ escapes compose interpolation so the shell inside the container
+      # expands PORT at runtime.
+      test: ["CMD-SHELL", "wget -q --spider \"http://127.0.0.1:$${PORT}/\" || exit 1"]
       interval: 30s
       timeout: 3s
       retries: 3

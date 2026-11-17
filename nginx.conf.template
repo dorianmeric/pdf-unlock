@@ -1,6 +1,13 @@
+# This file is a template. At container start the nginx image's
+# /docker-entrypoint.d/20-envsubst-on-templates.sh renders it to
+# /etc/nginx/conf.d/default.conf, replacing ${PORT} with the value of the
+# PORT environment variable (default 8191, set in the Dockerfile).
+# Because the container runs with a read-only root filesystem, that output
+# directory is mounted as a tmpfs (see docker-compose.yml).
 server {
-    listen 8191;
-    listen [::]:8191;
+    # nginx cannot read env vars itself, so the port arrives via envsubst above.
+    listen ${PORT};
+    listen [::]:${PORT};
     server_name _;
 
     root /usr/share/nginx/html;

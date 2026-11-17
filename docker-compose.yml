@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: pdf-unlock:latest
+    #image: pdf-unlock:latest
     container_name: pdf-unlock
 
     # host:container — change only the left side
@@ -38,23 +38,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    
+    networks:
+      - caddy-network
 
-  # --- Optional: TLS-terminating reverse proxy -------------------------------
-  # Uncomment to serve the app over HTTPS (adds certificate handling for you).
-  caddy:
-    image: caddy:2-alpine
-    container_name: pdf-unlock-proxy
-    depends_on:
-      - pdf-unlock
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    restart: unless-stopped
+networks:
+  caddy-network:
+    name: caddy-network
+    external: true
 
-volumes:
-  caddy_data:
-  caddy_config:

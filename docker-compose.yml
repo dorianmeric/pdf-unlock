@@ -11,7 +11,7 @@ services:
 
     # host:container — change only the left side
     ports:
-      - "8191:80"
+      - "8191:8191"
 
     restart: unless-stopped
 
